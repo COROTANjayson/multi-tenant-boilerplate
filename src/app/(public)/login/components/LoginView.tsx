@@ -3,22 +3,39 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/app/store/auth.store";
+import { authService } from "@/services/auth.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { AxiosError } from "axios";
+import { LoginResponse } from "@/types/auth";
 
 export function LoginView() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const { mutate: handleLogin, isPending } = useMutation({
+    mutationFn: authService.login,
+    onSuccess: (data: LoginResponse) => {
+      login(data);
+      router.push("/dashboard");
+    },
+    onError: (error: AxiosError<{ message: string }>) => {
+      setErrorMessage(error.response?.data?.message || "Login failed. Please try again.");
+      console.error("Login failed:", error);
+    } 
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login({ email, name: email.split("@")[0] });
-    router.push("/dashboard");
+    setErrorMessage("");
+    handleLogin({ email, password });
   };
 
   return (
@@ -52,8 +69,11 @@ export function LoginView() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              Login
+            {errorMessage && (
+              <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+            )}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? "Logging in..." : "Login"}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
