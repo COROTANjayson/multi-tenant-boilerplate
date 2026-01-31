@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
-import { Navbar } from "@/components/navbar";
 import ReactQueryProvider from "@/components/providers/react-query-provider";
 import SessionProvider from "@/components/providers/session-provider";
 import AuthInitializer from "@/components/providers/auth-initializer";
@@ -42,7 +41,6 @@ export default async function RootLayout({
         />
         <ReactQueryProvider>
           <SessionProvider>
-            <Navbar initialIsAuthenticated={isAuthenticated} />
             {children}
           </SessionProvider>
         </ReactQueryProvider>
