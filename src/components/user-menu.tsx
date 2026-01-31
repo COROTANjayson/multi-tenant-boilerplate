@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 function getInitials(name?: string, email?: string) {
   const safeName = (name ?? "").trim();
@@ -27,7 +28,7 @@ export function UserMenu({ className }: { className?: string }) {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
-  const name = user?.name?.trim() || "User";
+  const name = user ? `${user.firstName} ${user.lastName}`.trim() : "User";
   const email = user?.email?.trim() || "";
 
   const initials = useMemo(() => getInitials(name, email), [name, email]);
@@ -41,8 +42,13 @@ export function UserMenu({ className }: { className?: string }) {
     router.push("/profile");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     close();
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
     logout();
     router.push("/login");
   };
