@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/app/store/auth.store";
+import { useOrganizationStore } from "@/app/store/organization.store";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL, // Adjust base URL as needed
@@ -8,10 +9,21 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
-  console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, { hasToken: !!token });
+  const orgId = useOrganizationStore.getState().currentOrganization?.id;
+
+  console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, { 
+    hasToken: !!token,
+    orgId 
+  });
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (orgId) {
+    config.headers["X-Organization-Id"] = orgId;
+  }
+
   return config;
 });
 
