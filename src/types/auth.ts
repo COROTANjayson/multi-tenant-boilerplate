@@ -10,6 +10,17 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  age: number;
+  gender: string;
+  isEmailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserPayload {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   age?: number;
   gender?: string;
 }

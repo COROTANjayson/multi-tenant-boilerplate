@@ -17,6 +17,11 @@ export const authService = {
     return response.data.data;
   },
 
+  updateMe: async (data: any) => {
+    const response = await api.patch<ApiResponse<User>>("/users/me", data);
+    return response.data.data;
+  },
+
   refreshToken: async () => {
     const response = await api.post<ApiResponse<AuthTokens>>("/auth/refresh");
     return response.data.data;

@@ -1,7 +1,9 @@
+import { PageHeader } from "@/components/shared/page-header";
+
 export function ServiceView() {
   return (
     <div className="container py-8">
-      <h1 className="text-4xl font-bold">Service Page</h1>
+      <PageHeader title="Services" description="Manage and monitor your active services." />
     </div>
   );
 }

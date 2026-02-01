@@ -1,7 +1,9 @@
+import { PageHeader } from "@/components/shared/page-header";
+
 export function DashboardView() {
   return (
     <div className=" py-8">
-      <h1 className="text-4xl font-bold">Dashboard Page</h1>
+      <PageHeader title="Dashboard" description="Welcome back to your workspace overview." />
     </div>
   );
 }
