@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import Cookies from "js-cookie";
 import { Organization } from "@/types/organization";
 
 interface OrganizationState {
@@ -18,8 +19,18 @@ export const useOrganizationStore = create<OrganizationState>()(
       organizations: [],
       currentOrganization: null,
       setOrganizations: (organizations) => set({ organizations }),
-      setCurrentOrganization: (organization) => set({ currentOrganization: organization }),
-      clearOrganizations: () => set({ organizations: [], currentOrganization: null }),
+      setCurrentOrganization: (organization) => {
+        if (organization) {
+          Cookies.set("currentOrganization", JSON.stringify(organization), { expires: 7 });
+        } else {
+          Cookies.remove("currentOrganization");
+        }
+        set({ currentOrganization: organization });
+      },
+      clearOrganizations: () => {
+        Cookies.remove("currentOrganization");
+        set({ organizations: [], currentOrganization: null });
+      },
     }),
     {
       name: "organization-storage",

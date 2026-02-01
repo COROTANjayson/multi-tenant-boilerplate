@@ -22,9 +22,25 @@ export function LoginView() {
 
   const { mutate: handleLogin, isPending } = useMutation({
     mutationFn: authService.login,
-    onSuccess: (data: LoginResponse) => {
-      login(data);
-      router.push("/dashboard");
+    onSuccess: async (data: LoginResponse) => {
+      try {
+        // 1. Set tokens first so subsequent API calls (like getMe) have the Authorization header
+        useAuthStore.getState().setTokens({
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+        });
+
+        // 2. Fetch user info
+        const user = await authService.getMe();
+        
+        // 3. Update store with user info
+        useAuthStore.getState().setUser(user);
+        
+        router.push("/dashboard");
+      } catch (error) {
+        setErrorMessage("Failed to fetch user details.");
+        console.error("Fetch user failed:", error);
+      }
     },
     onError: (error: AxiosError<{ message: string }>) => {
       setErrorMessage(error.response?.data?.message || "Login failed. Please try again.");

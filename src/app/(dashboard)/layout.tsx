@@ -3,6 +3,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { AppSidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { SidebarProviderWrapper } from "@/components/sidebar-provider-wrapper";
+import { StoreHydrator } from "@/components/store-hydrator";
 import { Separator } from "@/components/ui/separator";
 import { UserMenu } from "@/components/user-menu";
 
@@ -13,11 +14,18 @@ export default async function DashboardLayout({
 }) {
   const cookieStore = await cookies();
   const isAuthenticated = !!cookieStore.get("accessToken")?.value;
+  
+  const userCookie = cookieStore.get("user")?.value;
+  const user = userCookie ? JSON.parse(userCookie) : null;
+  
+  const orgCookie = cookieStore.get("currentOrganization")?.value;
+  const currentOrganization = orgCookie ? JSON.parse(orgCookie) : null;
 
   return (
     <AuthGuard initialIsAuthenticated={isAuthenticated}>
-      <SidebarProviderWrapper>
-        <AppSidebar />
+      <StoreHydrator user={user} currentOrganization={currentOrganization}>
+        <SidebarProviderWrapper>
+          <AppSidebar />
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2 px-4">
@@ -33,6 +41,7 @@ export default async function DashboardLayout({
           </div>
         </SidebarInset>
       </SidebarProviderWrapper>
+      </StoreHydrator>
     </AuthGuard>
   );
 }

@@ -13,6 +13,7 @@ interface AuthState {
   login: (data: { user: User; accessToken: string; refreshToken: string }) => void;
   logout: () => void;
   setUser: (user: User) => void;
+  setTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
   setAuth: (data: Partial<AuthState>) => void;
 }
 
@@ -24,8 +25,9 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       login: (data) => {
-        Cookies.set("accessToken", data.accessToken, { expires: 7 });
+        Cookies.set("accessToken", data.accessToken, { expires: 1 });
         Cookies.set("refreshToken", data.refreshToken, { expires: 30 });
+        Cookies.set("user", JSON.stringify(data.user), { expires: 1 });
         set({
           isAuthenticated: true,
           user: data.user,
@@ -36,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         Cookies.remove("accessToken");
         Cookies.remove("refreshToken");
+        Cookies.remove("user");
         set({
           isAuthenticated: false,
           user: null,
@@ -43,7 +46,19 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
         });
       },
-      setUser: (user) => set({ user }),
+      setUser: (user) => {
+        Cookies.set("user", JSON.stringify(user), { expires: 7 });
+        set({ user });
+      },
+      setTokens: (tokens) => {
+        Cookies.set("accessToken", tokens.accessToken, { expires: 1 });
+        Cookies.set("refreshToken", tokens.refreshToken, { expires: 30 });
+        set({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          isAuthenticated: true,
+        });
+      },
       setAuth: (data) => set((state) => ({ ...state, ...data })),
     }),
     {
