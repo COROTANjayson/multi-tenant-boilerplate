@@ -17,11 +17,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useOrganizationStore } from "@/app/store/organization.store";
-import { fetchUserOrganizations } from "@/services/organization.service";
+import { useAuthStore } from "@/app/store/auth.store";
+import { fetchUserOrganizations, fetchOrganizationMembers } from "@/services/organization.service";
 import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
 
 export function OrganizationSwitcher() {
   const { isMobile } = useSidebar();
+  const { user } = useAuthStore();
   const { 
     organizations, 
     currentOrganization, 
@@ -29,6 +31,21 @@ export function OrganizationSwitcher() {
     setCurrentOrganization 
   } = useOrganizationStore();
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleOrgChange = async (org: any) => {
+    try {
+      const members = await fetchOrganizationMembers(org.id);
+      const currentMember = members.find(m => m.userId === user?.id);
+      
+      setCurrentOrganization({
+        ...org,
+        role: currentMember?.role
+      });
+    } catch (error) {
+      console.error("Failed to fetch organization role", error);
+      setCurrentOrganization(org);
+    }
+  };
 
   useEffect(() => {
     const loadOrgs = async () => {
@@ -40,7 +57,7 @@ export function OrganizationSwitcher() {
           setOrganizations(orgs);
           // If no organization is selected, select the first one
           if (orgs.length > 0 && !currentOrganization) {
-            setCurrentOrganization(orgs[0]);
+            handleOrgChange(orgs[0]);
           }
         } catch (error) {
           console.error("Failed to fetch organizations", error);
@@ -50,7 +67,14 @@ export function OrganizationSwitcher() {
       }
     };
     loadOrgs();
-  }, [organizations.length, currentOrganization, setOrganizations, setCurrentOrganization]);
+  }, [organizations.length, currentOrganization, setOrganizations, setCurrentOrganization, user?.id]);
+
+  // Ensure role is fetched if missing (e.g. on page reload with stale cookie)
+  useEffect(() => {
+    if (currentOrganization && !currentOrganization.role && user?.id) {
+      handleOrgChange(currentOrganization);
+    }
+  }, [currentOrganization?.id, currentOrganization?.role, user?.id]);
 
   const activeOrg = currentOrganization || { name: "Select Organization", slug: "v1.0.0" };
 
@@ -87,7 +111,7 @@ export function OrganizationSwitcher() {
             {organizations.map((org) => (
               <DropdownMenuItem
                 key={org.id}
-                onClick={() => setCurrentOrganization(org)}
+                onClick={() => handleOrgChange(org)}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-sm border">

@@ -16,6 +16,7 @@ export interface Organization {
   name: string;
   slug: string;
   ownerId: string;
+  role?: OrganizationRole;
   createdAt: string;
   updatedAt: string;
 }

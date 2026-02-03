@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import { Organization } from "@/types/organization";
+import { Organization, OrganizationMember } from "@/types/organization";
 
 export const fetchUserOrganizations = async (): Promise<Organization[]> => {
   const { data } = await api.get("/organizations");
@@ -8,5 +8,10 @@ export const fetchUserOrganizations = async (): Promise<Organization[]> => {
 
 export const createOrganization = async (name: string): Promise<Organization> => {
   const { data } = await api.post("/organizations", { name });
+  return data.data;
+};
+
+export const fetchOrganizationMembers = async (orgId: string): Promise<OrganizationMember[]> => {
+  const { data } = await api.get(`/organizations/${orgId}/members`);
   return data.data;
 };
