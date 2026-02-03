@@ -36,3 +36,15 @@ export interface OrganizationMember {
     email: string;
   };
 }
+
+export interface OrganizationInvitation {
+  id: string;
+  organizationId: string;
+  inviterId: string;
+  email: string;
+  role: OrganizationRole;
+  token: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+  createdAt: string;
+}

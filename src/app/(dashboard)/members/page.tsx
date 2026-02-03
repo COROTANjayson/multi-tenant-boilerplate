@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useOrganizationStore } from "@/app/store/organization.store";
-import { fetchOrganizationMembers } from "@/services/organization.service";
+import { fetchOrganizationMembers, fetchOrganizationInvitations } from "@/services/organization.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OrganizationMemberStatus } from "@/types/organization";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { InviteMemberDialog } from "@/components/invite-member-dialog";
+import { CountdownTimer } from "@/components/countdown-timer";
 
 type StatusTab = "active" | "invited" | "other";
 
@@ -15,22 +16,29 @@ export default function MembersPage() {
   const { currentOrganization } = useOrganizationStore();
   const [activeTab, setActiveTab] = useState<StatusTab>("active");
 
-  const { data: members, isLoading } = useQuery({
+  const { data: members, isLoading: isMembersLoading } = useQuery({
     queryKey: ["members", currentOrganization?.id],
     queryFn: () => fetchOrganizationMembers(currentOrganization!.id),
     enabled: !!currentOrganization?.id,
   });
 
+  const { data: invitations, isLoading: isInvitationsLoading } = useQuery({
+    queryKey: ["invitations", currentOrganization?.id],
+    queryFn: () => fetchOrganizationInvitations(currentOrganization!.id),
+    enabled: !!currentOrganization?.id && activeTab === "invited",
+  });
+
+  const isLoading = isMembersLoading || (activeTab === "invited" && isInvitationsLoading);
+
   const filteredMembers = members?.filter((member) => {
     if (activeTab === "active") return member.status === OrganizationMemberStatus.ACTIVE;
-    if (activeTab === "invited") return member.status === OrganizationMemberStatus.INVITED;
     if (activeTab === "other") {
       return (
         member.status === OrganizationMemberStatus.SUSPENDED ||
         member.status === OrganizationMemberStatus.LEFT
       );
     }
-    return true;
+    return false;
   });
 
   const tabs: { id: StatusTab; label: string }[] = [
@@ -48,6 +56,7 @@ export default function MembersPage() {
             Manage your organization members and their roles.
           </p>
         </div>
+        <InviteMemberDialog />
       </div>
 
       <div className="flex items-center gap-1 border-b pb-px">
@@ -72,11 +81,19 @@ export default function MembersPage() {
           <table className="w-full caption-bottom text-sm border-collapse">
             <thead>
               <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Email</th>
+                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                  {activeTab === "invited" ? "Email" : "Name"}
+                </th>
+                {activeTab !== "invited" && (
+                  <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Email</th>
+                )}
                 <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Role</th>
-                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Joined At</th>
+                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                  {activeTab === "invited" ? "Expires In" : "Status"}
+                </th>
+                <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                   {activeTab === "invited" ? "Sent At" : "Joined At"}
+                </th>
               </tr>
             </thead>
             <tbody className="[&_tr:last-child]:border-0">
@@ -84,10 +101,27 @@ export default function MembersPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b">
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[150px]" /></td>
-                    <td className="p-4 align-middle"><Skeleton className="h-4 w-[200px]" /></td>
+                    {activeTab !== "invited" && <td className="p-4 align-middle"><Skeleton className="h-4 w-[200px]" /></td>}
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[80px]" /></td>
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[80px]" /></td>
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[100px]" /></td>
+                  </tr>
+                ))
+              ) : activeTab === "invited" ? (
+                invitations?.map((invite) => (
+                  <tr key={invite.id} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="p-4 align-middle font-medium">{invite.email}</td>
+                    <td className="p-4 align-middle">
+                      <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground">
+                        {invite.role}
+                      </span>
+                    </td>
+                    <td className="p-4 align-middle text-orange-600">
+                      <CountdownTimer expiresAt={invite.expiresAt} />
+                    </td>
+                    <td className="p-4 align-middle text-muted-foreground">
+                      {new Date(invite.createdAt).toLocaleDateString()}
+                    </td>
                   </tr>
                 ))
               ) : filteredMembers?.map((member) => (
@@ -97,7 +131,7 @@ export default function MembersPage() {
                   </td>
                   <td className="p-4 align-middle">{member.user?.email}</td>
                   <td className="p-4 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground">
+                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground">
                       {member.role}
                     </span>
                   </td>
@@ -105,7 +139,6 @@ export default function MembersPage() {
                     <span className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border",
                       member.status === OrganizationMemberStatus.ACTIVE && "bg-green-100 text-green-700 border-green-200",
-                      member.status === OrganizationMemberStatus.INVITED && "bg-blue-100 text-blue-700 border-blue-200",
                       (member.status === OrganizationMemberStatus.SUSPENDED || member.status === OrganizationMemberStatus.LEFT) && "bg-red-100 text-red-700 border-red-200"
                     )}>
                       {member.status}
@@ -116,10 +149,13 @@ export default function MembersPage() {
                   </td>
                 </tr>
               ))}
-              {!isLoading && (!filteredMembers || filteredMembers.length === 0) && (
+              {!isLoading && (
+                (activeTab === "invited" && (!invitations || invitations.length === 0)) ||
+                (activeTab !== "invited" && (!filteredMembers || filteredMembers.length === 0))
+              ) && (
                 <tr className="border-b transition-colors hover:bg-muted/50">
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                    No {activeTab} members found.
+                  <td colSpan={activeTab === "invited" ? 4 : 5} className="p-8 text-center text-muted-foreground">
+                    No {activeTab} {activeTab === "invited" ? "invitations" : "members"} found.
                   </td>
                 </tr>
               )}

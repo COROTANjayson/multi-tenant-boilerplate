@@ -6,6 +6,7 @@ import { MainSidebarProvider } from "@/components/main-sidebar-provider";
 import { StoreHydrator } from "@/components/store-hydrator";
 import { Separator } from "@/components/ui/separator";
 import { UserMenu } from "@/components/user-menu";
+import { Toaster } from "@/components/ui/sonner";
 
 export default async function DashboardLayout({
   children,
@@ -42,6 +43,7 @@ export default async function DashboardLayout({
         </SidebarInset>
       </MainSidebarProvider>
       </StoreHydrator>
+      <Toaster />
     </AuthGuard>
   );
 }
