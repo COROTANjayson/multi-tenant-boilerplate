@@ -1,20 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizationStore } from "@/app/store/organization.store";
-import { fetchOrganizationMembers, fetchOrganizationInvitations } from "@/services/organization.service";
+import { fetchOrganizationMembers, fetchOrganizationInvitations, revokeInvitation } from "@/services/organization.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OrganizationMemberStatus } from "@/types/organization";
 import { cn } from "@/lib/utils";
 import { InviteMemberDialog } from "@/components/invite-member-dialog";
 import { CountdownTimer } from "@/components/countdown-timer";
+import { Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type StatusTab = "active" | "invited" | "other";
 
 export default function MembersPage() {
   const { currentOrganization } = useOrganizationStore();
   const [activeTab, setActiveTab] = useState<StatusTab>("active");
+  const [revokingInvitationId, setRevokingInvitationId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: members, isLoading: isMembersLoading } = useQuery({
     queryKey: ["members", currentOrganization?.id],
@@ -26,6 +40,17 @@ export default function MembersPage() {
     queryKey: ["invitations", currentOrganization?.id],
     queryFn: () => fetchOrganizationInvitations(currentOrganization!.id),
     enabled: !!currentOrganization?.id && activeTab === "invited",
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (invitationId: string) => revokeInvitation(currentOrganization!.id, invitationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invitations", currentOrganization?.id] });
+      toast.success("Invitation revoked successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to revoke invitation");
+    },
   });
 
   const isLoading = isMembersLoading || (activeTab === "invited" && isInvitationsLoading);
@@ -40,6 +65,10 @@ export default function MembersPage() {
     }
     return false;
   });
+
+  const handleRevoke = (invitationId: string) => {
+    setRevokingInvitationId(invitationId);
+  };
 
   const tabs: { id: StatusTab; label: string }[] = [
     { id: "active", label: "Active" },
@@ -94,6 +123,9 @@ export default function MembersPage() {
                 <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
                    {activeTab === "invited" ? "Sent At" : "Joined At"}
                 </th>
+                {activeTab === "invited" && (
+                  <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="[&_tr:last-child]:border-0">
@@ -105,6 +137,7 @@ export default function MembersPage() {
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[80px]" /></td>
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[80px]" /></td>
                     <td className="p-4 align-middle"><Skeleton className="h-4 w-[100px]" /></td>
+                    {activeTab === "invited" && <td className="p-4 align-middle"><Skeleton className="h-4 w-[50px] ml-auto" /></td>}
                   </tr>
                 ))
               ) : activeTab === "invited" ? (
@@ -121,6 +154,20 @@ export default function MembersPage() {
                     </td>
                     <td className="p-4 align-middle text-muted-foreground">
                       {new Date(invite.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="p-4 align-middle text-right">
+                      <button
+                        onClick={() => handleRevoke(invite.id)}
+                        disabled={revokeMutation.isPending && revokeMutation.variables === invite.id}
+                        className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        title="Revoke Invitation"
+                      >
+                        {revokeMutation.isPending && revokeMutation.variables === invite.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -154,7 +201,7 @@ export default function MembersPage() {
                 (activeTab !== "invited" && (!filteredMembers || filteredMembers.length === 0))
               ) && (
                 <tr className="border-b transition-colors hover:bg-muted/50">
-                  <td colSpan={activeTab === "invited" ? 4 : 5} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={activeTab === "invited" ? 5 : 5} className="p-8 text-center text-muted-foreground">
                     No {activeTab} {activeTab === "invited" ? "invitations" : "members"} found.
                   </td>
                 </tr>
@@ -163,6 +210,49 @@ export default function MembersPage() {
           </table>
         </div>
       </div>
+
+      <AlertDialog 
+        open={!!revokingInvitationId} 
+        onOpenChange={(open) => !open && setRevokingInvitationId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Revoke Invitation
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke this invitation? This action cannot be undone, and the link will no longer work.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revokeMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (revokingInvitationId) {
+                  revokeMutation.mutate(revokingInvitationId, {
+                    onSuccess: () => setRevokingInvitationId(null),
+                  });
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={revokeMutation.isPending}
+            >
+              {revokeMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                "Revoke Invitation"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

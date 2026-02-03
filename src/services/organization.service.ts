@@ -25,3 +25,7 @@ export const inviteMember = async (orgId: string, email: string, role: string): 
   const { data } = await api.post(`/organizations/${orgId}/invitations`, { email, role });
   return data.data;
 };
+
+export const revokeInvitation = async (orgId: string, invitationId: string): Promise<void> => {
+  await api.delete(`/organizations/${orgId}/invitations/${invitationId}`);
+};
