@@ -26,11 +26,7 @@ export default async function DashboardLayout({
 
   return (
     <AuthGuard initialIsAuthenticated={isAuthenticated}>
-      <StoreHydrator 
-        user={user} 
-        currentOrganization={currentOrganization}
-        accessToken={accessToken}
-      >
+      <StoreHydrator currentOrganization={currentOrganization}>
         <MainSidebarProvider>
           <MainSidebar />
         <SidebarInset>

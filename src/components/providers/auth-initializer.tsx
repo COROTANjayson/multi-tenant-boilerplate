@@ -1,24 +1,25 @@
 "use client";
 
 import { useEffect } from "react";
+import { User } from "@/types/auth";
 import { useAuthStore } from "@/app/store/auth.store";
 
 interface AuthInitializerProps {
   isAuthenticated: boolean;
   accessToken: string | null;
+  user: User | null;
 }
 
-export default function AuthInitializer({ isAuthenticated, accessToken }: AuthInitializerProps) {
+export default function AuthInitializer({ isAuthenticated, accessToken, user }: AuthInitializerProps) {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
-    // Sync store with cookie-based state and rehydrate
-    useAuthStore.persist.rehydrate();
     setAuth({
       isAuthenticated,
       accessToken,
+      user,
     });
-  }, [isAuthenticated, accessToken, setAuth]);
+  }, [isAuthenticated, accessToken, user, setAuth]);
 
   return null;
 }

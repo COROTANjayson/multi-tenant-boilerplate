@@ -21,9 +21,11 @@ export default async function SettingsLayout({
   const orgCookie = cookieStore.get("currentOrganization")?.value;
   const currentOrganization = orgCookie ? JSON.parse(orgCookie) : null;
 
+  const accessToken = cookieStore.get("accessToken")?.value || null;
+
   return (
     <AuthGuard initialIsAuthenticated={isAuthenticated}>
-      <StoreHydrator user={user} currentOrganization={currentOrganization}>
+      <StoreHydrator currentOrganization={currentOrganization}>
         <div className="flex min-h-screen flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background px-6">
             <div className="flex items-center gap-4">

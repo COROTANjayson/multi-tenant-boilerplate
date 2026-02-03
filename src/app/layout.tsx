@@ -28,6 +28,8 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken")?.value || null;
+  const userCookie = cookieStore.get("user")?.value;
+  const user = userCookie ? JSON.parse(userCookie) : null;
   const isAuthenticated = !!accessToken;
 
   return (
@@ -38,6 +40,7 @@ export default async function RootLayout({
         <AuthInitializer 
           isAuthenticated={isAuthenticated} 
           accessToken={accessToken} 
+          user={user}
         />
         <ReactQueryProvider>
           <SessionProvider>
