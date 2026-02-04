@@ -31,10 +31,9 @@ const adminNavItems = [
 
 export function MainSidebar() {
   const pathname = usePathname();
-  const { currentOrganization } = useOrganizationStore();
+  const { currentOrganization, currentRole } = useOrganizationStore();
 
-  const userRole = currentOrganization?.role;
-  const canSeeAdmin = userRole === OrganizationRole.OWNER || userRole === OrganizationRole.ADMIN;
+  const canSeeAdmin = currentRole === OrganizationRole.OWNER || currentRole === OrganizationRole.ADMIN;
 
   return (
     <Sidebar collapsible="icon">

@@ -28,7 +28,7 @@ import { PageHeaderContainer } from "@/components/shared/page-header-container";
 type StatusTab = "active" | "invited" | "other";
 
 export default function MembersPage() {
-  const { currentOrganization } = useOrganizationStore();
+  const { currentOrganization, currentRole } = useOrganizationStore();
   const [activeTab, setActiveTab] = useState<StatusTab>("active");
   const [revokingInvitationId, setRevokingInvitationId] = useState<
     string | null
@@ -40,8 +40,8 @@ export default function MembersPage() {
   const queryClient = useQueryClient();
 
   const canManage =
-    currentOrganization?.role === OrganizationRole.ADMIN ||
-    currentOrganization?.role === OrganizationRole.OWNER;
+    currentRole === OrganizationRole.ADMIN ||
+    currentRole === OrganizationRole.OWNER;
 
   const { data: members, isLoading: isMembersLoading } = useQuery({
     queryKey: ["members", currentOrganization?.id],

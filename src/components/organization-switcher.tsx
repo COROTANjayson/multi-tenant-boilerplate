@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useOrganizationStore } from "@/app/store/organization.store";
 import { useAuthStore } from "@/app/store/auth.store";
-import { fetchUserOrganizations, fetchOrganizationMembers } from "@/services/organization.service";
+import { fetchUserOrganizations, fetchCurrentMember } from "@/services/organization.service";
 import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
 
 export function OrganizationSwitcher() {
@@ -26,7 +26,8 @@ export function OrganizationSwitcher() {
   const { user } = useAuthStore();
   const { 
     organizations, 
-    currentOrganization, 
+    currentOrganization,
+    currentRole,
     setOrganizations, 
     setCurrentOrganization 
   } = useOrganizationStore();
@@ -34,13 +35,8 @@ export function OrganizationSwitcher() {
 
   const handleOrgChange = async (org: any) => {
     try {
-      const members = await fetchOrganizationMembers(org.id);
-      const currentMember = members.find(m => m.userId === user?.id);
-      
-      setCurrentOrganization({
-        ...org,
-        role: currentMember?.role
-      });
+      const member = await fetchCurrentMember(org.id);
+      setCurrentOrganization(org, member.role);
     } catch (error) {
       console.error("Failed to fetch organization role", error);
       setCurrentOrganization(org);
@@ -68,13 +64,6 @@ export function OrganizationSwitcher() {
     };
     loadOrgs();
   }, [organizations.length, currentOrganization, setOrganizations, setCurrentOrganization, user?.id]);
-
-  // Ensure role is fetched if missing (e.g. on page reload with stale cookie)
-  useEffect(() => {
-    if (currentOrganization && !currentOrganization.role && user?.id) {
-      handleOrgChange(currentOrganization);
-    }
-  }, [currentOrganization?.id, currentOrganization?.role, user?.id]);
 
   const activeOrg = currentOrganization || { name: "Select Organization", slug: "v1.0.0" };
 

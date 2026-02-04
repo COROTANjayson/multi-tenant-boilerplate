@@ -16,6 +16,11 @@ export const fetchOrganizationMembers = async (orgId: string): Promise<Organizat
   return data.data;
 };
 
+export const fetchCurrentMember = async (orgId: string): Promise<OrganizationMember> => {
+  const { data } = await api.get(`/organizations/${orgId}/members/me`);
+  return data.data;
+};
+
 export const fetchOrganizationInvitations = async (orgId: string): Promise<OrganizationInvitation[]> => {
   const { data } = await api.get(`/organizations/${orgId}/invitations`);
   return data.data;

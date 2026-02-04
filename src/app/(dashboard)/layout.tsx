@@ -21,12 +21,15 @@ export default async function DashboardLayout({
   
   const orgCookie = cookieStore.get("currentOrganization")?.value;
   const currentOrganization = orgCookie ? JSON.parse(orgCookie) : null;
+  
+  const roleCookie = cookieStore.get("currentRole")?.value;
+  const currentRole = roleCookie || null;
 
   const accessToken = cookieStore.get("accessToken")?.value || null;
 
   return (
     <AuthGuard initialIsAuthenticated={isAuthenticated}>
-      <StoreHydrator currentOrganization={currentOrganization}>
+      <StoreHydrator currentOrganization={currentOrganization} currentRole={currentRole as any}>
         <MainSidebarProvider>
           <MainSidebar />
         <SidebarInset>
