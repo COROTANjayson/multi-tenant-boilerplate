@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ChevronsUpDown, LayoutDashboard, Plus } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,21 +16,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useOrganizationStore } from "@/app/store/organization.store";
-import { useAuthStore } from "@/app/store/auth.store";
-import { fetchUserOrganizations, fetchCurrentMember } from "@/services/organization.service";
+import { fetchCurrentMember } from "@/services/organization.service";
 import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function OrganizationSwitcher() {
   const { isMobile } = useSidebar();
-  const { user } = useAuthStore();
   const { 
     organizations, 
     currentOrganization,
-    currentRole,
-    setOrganizations, 
-    setCurrentOrganization 
+    setCurrentOrganization,
+    isHydrated 
   } = useOrganizationStore();
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleOrgChange = async (org: any) => {
     try {
@@ -43,27 +39,22 @@ export function OrganizationSwitcher() {
     }
   };
 
-  useEffect(() => {
-    const loadOrgs = async () => {
-      // Only fetch if we don't have any organizations yet
-      if (organizations.length === 0) {
-        setIsLoading(true);
-        try {
-          const orgs = await fetchUserOrganizations();
-          setOrganizations(orgs);
-          // If no organization is selected, select the first one
-          if (orgs.length > 0 && !currentOrganization) {
-            handleOrgChange(orgs[0]);
-          }
-        } catch (error) {
-          console.error("Failed to fetch organizations", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadOrgs();
-  }, [organizations.length, currentOrganization, setOrganizations, setCurrentOrganization, user?.id]);
+  if (!isHydrated) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" disabled>
+            <Skeleton className="aspect-square size-8 rounded-lg" />
+            <div className="grid flex-1 gap-1 px-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="ml-auto size-4" />
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   const activeOrg = currentOrganization || { name: "Select Organization", slug: "v1.0.0" };
 
@@ -81,9 +72,9 @@ export function OrganizationSwitcher() {
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {activeOrg.name === "Select Organization" && isLoading ? "Loading..." : activeOrg.name}
+                  {activeOrg.name}
                 </span>
-                <span className="truncate text-xs">{activeOrg.slug}</span>
+                <span className="truncate text-xs">{(activeOrg as any).slug}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -109,7 +100,7 @@ export function OrganizationSwitcher() {
                 <span className="flex-1 truncate">{org.name}</span>
               </DropdownMenuItem>
             ))}
-            {organizations.length === 0 && !isLoading && (
+            {organizations.length === 0 && (
               <div className="px-2 py-1.5 text-sm text-muted-foreground">
                 No organizations found
               </div>

@@ -20,12 +20,34 @@ export default async function SettingsLayout({
   
   const orgCookie = cookieStore.get("currentOrganization")?.value;
   const currentOrganization = orgCookie ? JSON.parse(orgCookie) : null;
+  
+  const roleCookie = cookieStore.get("currentRole")?.value;
+  const currentRole = (roleCookie || null) as any;
 
   const accessToken = cookieStore.get("accessToken")?.value || null;
 
+  let organizations = [];
+  if (accessToken) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/organizations`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const data = await response.json();
+      organizations = data.data || [];
+    } catch (error) {
+      console.error("Failed to fetch organizations on server", error);
+    }
+  }
+
   return (
     <AuthGuard initialIsAuthenticated={isAuthenticated}>
-      <StoreHydrator currentOrganization={currentOrganization}>
+      <StoreHydrator 
+        currentOrganization={currentOrganization} 
+        currentRole={currentRole}
+        organizations={organizations}
+      >
         <div className="flex min-h-screen flex-col bg-background">
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background px-6">
             <div className="flex items-center gap-4">
@@ -46,7 +68,7 @@ export default async function SettingsLayout({
             <div className="mx-auto max-w-6xl">
               <div className="flex flex-col gap-8 md:flex-row">
                 <aside className="w-full md:w-64">
-                  <SettingsNav />
+                   <SettingsNav />
                 </aside>
                 <Separator orientation="vertical" className="hidden h-auto self-stretch md:block" />
                 <div className="flex-1">

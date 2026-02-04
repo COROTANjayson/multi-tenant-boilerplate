@@ -23,13 +23,32 @@ export default async function DashboardLayout({
   const currentOrganization = orgCookie ? JSON.parse(orgCookie) : null;
   
   const roleCookie = cookieStore.get("currentRole")?.value;
-  const currentRole = roleCookie || null;
+  const currentRole = (roleCookie || null) as any;
 
   const accessToken = cookieStore.get("accessToken")?.value || null;
 
+  let organizations = [];
+  if (accessToken) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/organizations`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const data = await response.json();
+      organizations = data.data || [];
+    } catch (error) {
+      console.error("Failed to fetch organizations on server", error);
+    }
+  }
+
   return (
     <AuthGuard initialIsAuthenticated={isAuthenticated}>
-      <StoreHydrator currentOrganization={currentOrganization} currentRole={currentRole as any}>
+      <StoreHydrator 
+        currentOrganization={currentOrganization} 
+        currentRole={currentRole}
+        organizations={organizations}
+      >
         <MainSidebarProvider>
           <MainSidebar />
         <SidebarInset>
