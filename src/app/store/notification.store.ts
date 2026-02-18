@@ -7,6 +7,7 @@ export interface Notification {
   title: string;
   message: string;
   metadata?: any;
+  redirectUrl?: string;
   isRead: boolean;
   readAt: string | null;
   createdAt: string;

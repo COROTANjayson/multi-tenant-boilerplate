@@ -65,7 +65,7 @@ export function NotificationList() {
           ) : (
             <div className="flex flex-col">
               {notifications.map((notification) => {
-                  const actionUrl = notification.metadata?.actionUrl || (notification.metadata?.token ? `/invites/accept?token=${notification.metadata.token}` : null);
+                  const redirectUrl = notification.redirectUrl || notification.metadata?.actionUrl || (notification.metadata?.token ? `/invites/accept?token=${notification.metadata.token}` : null);
 
                   return (
                     <NotificationItem
@@ -74,21 +74,13 @@ export function NotificationList() {
                       description={notification.message}
                       time={timeAgo(notification.createdAt)}
                       read={notification.isRead}
-                      onClick={() => markAsRead(notification.id)}
-                      actions={
-                        (notification.type === 'ORGANIZATION_INVITE' || notification.type === 'MEMBER_INVITE') && !notification.isRead && actionUrl ? (
-                            <Button
-                                size="sm"
-                                className="w-full mt-2"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRedirect(notification.id, actionUrl);
-                                }}
-                            >
-                                View Invitation
-                            </Button>
-                        ) : null
-                      }
+                      onClick={() => {
+                          if (redirectUrl) {
+                              handleRedirect(notification.id, redirectUrl);
+                          } else {
+                              markAsRead(notification.id);
+                          }
+                      }}
                     />
                   );
               })}
