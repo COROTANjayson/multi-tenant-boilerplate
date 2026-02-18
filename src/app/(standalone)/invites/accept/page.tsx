@@ -25,6 +25,8 @@ export default function AcceptInvitePage() {
     retry: false,
   });
 
+  console.log("inviteDetails:", inviteDetails);
+
   // Accept invitation mutation
   const { mutate: acceptInvite, isPending: isAccepting } = useMutation({
     mutationFn: () => organizationService.acceptInvite(token!),
@@ -77,6 +79,29 @@ export default function AcceptInvitePage() {
         </CardHeader>
         <CardContent>
           <Button onClick={() => router.push("/dashboard")} variant="outline" className="w-full">
+            Go to Dashboard
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (inviteDetails?.isExistingMember || inviteDetails?.invitation.acceptedAt) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>
+            {inviteDetails?.isExistingMember ? "Already a Member" : "Invitation Accepted"}
+          </CardTitle>
+          <CardDescription>
+            {inviteDetails?.isExistingMember 
+                ? <span>You are already a member of <strong>{inviteDetails.organization.name}</strong>.</span>
+                : "This invitation has already been used."
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => router.push("/dashboard")} className="w-full">
             Go to Dashboard
           </Button>
         </CardContent>
